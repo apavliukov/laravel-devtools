@@ -1,5 +1,8 @@
 # laravel-devtools
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/apavliukov/laravel-devtools.svg)](https://packagist.org/packages/apavliukov/laravel-devtools)
+[![Total Downloads](https://img.shields.io/packagist/dt/apavliukov/laravel-devtools.svg)](https://packagist.org/packages/apavliukov/laravel-devtools)
+
 Shared development tooling for Laravel projects, distributed as a `require-dev`
 composer package so every project and every developer gets the same tools without
 per-project copies that rot.
