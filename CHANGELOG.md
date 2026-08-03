@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.2](https://github.com/apavliukov/laravel-devtools/compare/v0.1.1...v0.1.2) (2026-08-03)
+
+### Highlights
+
+The Stop hook now runs the checker with host PHP instead of Sail, so it keeps working when Docker is down — it needs PHP 8.4+ on the host. It also catches PHP files inside freshly created untracked directories, which the previous gating missed.
+
+### Bug Fixes
+
+* run the Stop hook with host PHP and gate on git pathspec ([728896a](https://github.com/apavliukov/laravel-devtools/commit/728896a190d3d130a7c0fd44827a8b364006ce34))
+
 ## [0.1.1](https://github.com/apavliukov/laravel-devtools/compare/v0.1.0...v0.1.1) (2026-08-03)
 
 ### Highlights
