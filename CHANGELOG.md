@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.1](https://github.com/apavliukov/laravel-devtools/compare/v0.1.0...v0.1.1) (2026-08-03)
+
+### Highlights
+
+The package is now published on [Packagist](https://packagist.org/packages/apavliukov/laravel-devtools); the README links it. No code changes.
+
 ## 0.1.0 (2026-08-03)
 
 ### Highlights
