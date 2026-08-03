@@ -70,8 +70,9 @@ that touched PHP/lang files while translations are missing:
 }
 ```
 
-The hook is a detector only — silent when nothing relevant changed or when
-Docker/Sail is down; fixing translations is the skill's job.
+The hook is a detector only — silent when nothing relevant changed; fixing
+translations is the skill's job. It runs the checker with host PHP (no framework
+boot), so it works even when Docker/Sail is down.
 
 ## Migrating a project off local copies
 
