@@ -1,0 +1,31 @@
+{
+    "name": "apavliukov/laravel-devtools",
+    "description": "Shared Laravel dev tooling: the laravel-finalize Boost skill, a translation completeness checker, and a Claude Code Stop-hook backstop.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Aleksandr Pavliukov"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "symfony/finder": "^7.3 || ^8.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.13",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5 || ^12.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AlexPavliukov\\Devtools\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/check-translations"
+    ],
+    "config": {
+        "sort-packages": true
+    }
+}

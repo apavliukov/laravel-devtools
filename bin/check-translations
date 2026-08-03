@@ -1,0 +1,184 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * i18n completeness check for the laravel-finalize skill and the Stop-hook
+ * backstop. Scans host-app code for __()/@lang/trans()/trans_choice() strings
+ * and fails if any is missing from any lang/*.json locale. Locales come from
+ * the host app's lang/*.json — no hardcoded list, no config.
+ *
+ * Two modes:
+ *   (default) diff — only strings under app/resources/routes in files changed vs
+ *             main, so a pre-existing backlog never blocks day-to-day branch work.
+ *   --all     full audit — every string under app/resources/routes.
+ *
+ *   vendor/bin/sail php vendor/bin/check-translations
+ *   vendor/bin/sail php vendor/bin/check-translations --all
+ *
+ * Dotted keys (auth.failed) resolve from PHP array lang files, not JSON, and are
+ * ignored. Exit code 1 (+ an "Untranslated strings found" marker on STDERR) = gaps.
+ */
+
+use Symfony\Component\Finder\Finder;
+
+const SCAN_DIRECTORIES = ['app', 'resources', 'routes'];
+
+// Composer's bin proxy defines $_composer_autoload_path; the host root is two
+// levels up from vendor/autoload.php. Direct invocation (package repo, tests)
+// falls back to the package's own autoloader, with cwd as the host root.
+if (isset($_composer_autoload_path)) {
+    // realpath: the proxy hands over "vendor/bin/../autoload.php", and dirname()
+    // does not normalize ".." segments — without it the root resolves to vendor/.
+    $autoloadPath = realpath($_composer_autoload_path) ?: $_composer_autoload_path;
+    $root = dirname($autoloadPath, 2);
+} else {
+    $autoloadPath = dirname(__DIR__).'/vendor/autoload.php';
+    $root = (string) getcwd();
+}
+
+require $autoloadPath;
+
+/**
+ * @param  list<string>  $absoluteFiles
+ * @return list<string>
+ */
+$extractKeys = static function (array $absoluteFiles): array {
+    $pattern = '/(?:__|@lang|trans|trans_choice)\(\s*([\'"])((?:\\\\.|(?!\1).)*)\1/s';
+    $keys = [];
+
+    foreach ($absoluteFiles as $file) {
+        $contents = @file_get_contents($file);
+
+        if ($contents === false) {
+            continue;
+        }
+
+        if (preg_match_all($pattern, $contents, $matches, PREG_SET_ORDER) === 0) {
+            continue;
+        }
+
+        foreach ($matches as $match) {
+            $key = $match[1] === "'"
+                ? str_replace(['\\\\', "\\'"], ['\\', "'"], $match[2])
+                : stripcslashes($match[2]);
+
+            if ($key === '') {
+                continue;
+            }
+
+            if (preg_match('/^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/', $key) === 1) {
+                continue;
+            }
+
+            $keys[$key] = true;
+        }
+    }
+
+    $keys = array_keys($keys);
+    sort($keys);
+
+    return $keys;
+};
+
+if (in_array('--all', array_slice($argv, 1), true)) {
+    $directories = array_values(array_filter(
+        array_map(static fn (string $directory): string => $root.'/'.$directory, SCAN_DIRECTORIES),
+        is_dir(...),
+    ));
+
+    $files = [];
+
+    foreach (Finder::create()->files()->in($directories ?: [$root])->name('*.php')->name('*.js') as $file) {
+        $files[] = $file->getRealPath();
+    }
+
+    $scope = 'full audit of app/resources/routes';
+} else {
+    $git = static fn (string $arguments): string => (string) shell_exec(
+        'cd '.escapeshellarg($root).' && git '.$arguments.' 2>/dev/null',
+    );
+
+    $base = mb_trim($git('merge-base HEAD main')) ?: 'main';
+
+    $changed = array_merge(
+        explode("\n", mb_trim($git('diff --name-only '.escapeshellarg($base).'...HEAD'))),
+        explode("\n", mb_trim($git('diff --name-only HEAD'))),
+        explode("\n", mb_trim($git('diff --name-only --cached'))),
+        explode("\n", mb_trim($git('ls-files --others --exclude-standard'))),
+    );
+
+    $inScope = '#^('.implode('|', array_map(preg_quote(...), SCAN_DIRECTORIES)).')/.*\.(php|js)$#';
+    $files = [];
+
+    foreach (array_unique(array_filter($changed)) as $relative) {
+        if (preg_match($inScope, $relative) === 1 && is_file($root.'/'.$relative)) {
+            $files[] = $root.'/'.$relative;
+        }
+    }
+
+    $scope = 'files changed vs main';
+}
+
+$usedKeys = $extractKeys($files);
+
+$locales = [];
+
+foreach (glob($root.'/lang/*.json') ?: [] as $path) {
+    $locales[basename($path, '.json')] = $path;
+}
+
+ksort($locales);
+
+if ($locales === []) {
+    echo "No lang/*.json files found — nothing to check.\n";
+
+    exit(0);
+}
+
+printf("Checking %d translatable strings (%s) against %d locales.\n\n", count($usedKeys), $scope, count($locales));
+
+if ($usedKeys === []) {
+    echo "All translatable strings are covered in every locale.\n";
+
+    exit(0);
+}
+
+$hasGaps = false;
+
+foreach ($locales as $locale => $path) {
+    $decoded = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+    $translations = is_array($decoded) ? $decoded : [];
+
+    $missing = array_values(array_filter(
+        $usedKeys,
+        static fn (string $key): bool => ! array_key_exists($key, $translations),
+    ));
+
+    if ($missing === []) {
+        printf("  %-6s OK\n", $locale);
+
+        continue;
+    }
+
+    $hasGaps = true;
+    printf("  %-6s %d missing\n", $locale, count($missing));
+
+    foreach ($missing as $key) {
+        echo '    - '.$key."\n";
+    }
+}
+
+echo "\n";
+
+if ($hasGaps) {
+    // Stable marker the Stop hook greps for to distinguish gaps from a failed run.
+    fwrite(STDERR, "Untranslated strings found. Add the missing keys to every locale file.\n");
+
+    exit(1);
+}
+
+echo "All translatable strings are covered in every locale.\n";
+
+exit(0);
