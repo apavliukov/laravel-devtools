@@ -1,7 +1,8 @@
-# laravel-devtools
+[![tests](https://github.com/apavliukov/laravel-devtools/actions/workflows/tests.yml/badge.svg)](https://github.com/apavliukov/laravel-devtools/actions/workflows/tests.yml)
+[![Latest Version](https://img.shields.io/packagist/v/apavliukov/laravel-devtools.svg)](https://packagist.org/packages/apavliukov/laravel-devtools)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/apavliukov/laravel-devtools.svg)](https://packagist.org/packages/apavliukov/laravel-devtools)
-[![Total Downloads](https://img.shields.io/packagist/dt/apavliukov/laravel-devtools.svg)](https://packagist.org/packages/apavliukov/laravel-devtools)
+# laravel-devtools
 
 Shared development tooling for Laravel projects, distributed as a `require-dev`
 composer package so every project and every developer gets the same tools without
